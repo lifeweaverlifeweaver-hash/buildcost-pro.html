@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BuildCost Pro | ПТО Мастър - Строителен Инженеринг & Себестойност</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        /* Скриване на скролбар за по-чист вид */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        /* Стилове за принтиране на Акт 19 и Договори */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #print-area, #print-area * {
+                visibility: visible;
+            }
+            #print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: white;
+                padding: 20px;
+                color: black;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased overflow-x-hidden">
+
+    <!-- Известия (Toast Notification вместо alert) -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
+
+    <div class="flex h-screen overflow-hidden">
+        <!-- Тъмносиня странична навигация (Sidebar) -->
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 text-white transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-200 ease-in-out flex flex-col justify-between shadow-xl">
+            <div>
+                <!-- Лого и Бранд -->
+                <div class="flex items-center justify-between px-6 py-5 border-b border-slate-800">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
+                            <i class="fa-solid fa-helmet-safety"></i>
+                        </div>
+                        <div>
+                            <span class="font-bold text-base tracking-tight block leading-none">BuildCost <span class="text-blue-400">Pro</span></span>
+                            <span class="text-[11px] text-slate-400 font-medium tracking-wider uppercase">ПТО Мастър SaaS</span>
+                        </div>
+                    </div>
+                    <button id="close-sidebar" class="md:hidden text-slate-400 hover:text-white">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Активен Обект Селектор -->
+                <div class="px-4 py-4 border-b border-slate-800/80 bg-slate-800/40">
+                    <label class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold block mb-1">Активен Строителен Обект</label>
+                    <div class="flex items-center gap-2 text-sm font-medium text-white bg-slate-800 px-3 py-2 rounded-lg border border-slate-700">
+                        <i class="fa-solid fa-building text-blue-400"></i>
+                        <span class="truncate" title="Жилищна сграда Хоризонт - София">ЖС „Хоризонт“ - София</span>
+                    </div>
+                    <div class="mt-1.5 flex items-center justify-between text-[11px] text-slate-400 px-1">
+                        <span>Изпълнител: Контракт Сити</span>
+                        <span class="text-emerald-400 font-semibold">● Активен</span>
+                    </div>
+                </div>
+
+                <!-- Навигационно меню -->
+                <nav class="px-3 py-4 space-y-1">
+                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white transition-colors">
+                        <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+                        <span>Табло (CEO & ПТО)</span>
+                    </button>
+                    <button onclick="switchTab('kss')" id="nav-kss" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">
+                        <i class="fa-solid fa-calculator w-5 text-center"></i>
+                        <span>КСС & Анализни цени</span>
+                    </button>
+                    <button onclick="switchTab('akt19')" id="nav-akt19" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">
+                        <i class="fa-solid fa-file-signature w-5 text-center"></i>
+                        <span>Дигитален Акт 19</span>
+                    </button>
+                    <button onclick="switchTab('gantt')" id="nav-gantt" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">
+                        <i class="fa-solid fa-bars-staggered w-5 text-center"></i>
+                        <span>Линеен график & Cashflow</span>
+                    </button>
+                    <button onclick="switchTab('subcontractors')" id="nav-subcontractors" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">
+                        <i class="fa-solid fa-handshake w-5 text-center"></i>
+                        <span>Подизпълнители & Търгове</span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Долна част на Sidebar: Нулиране на демо данни -->
+            <div class="p-4 border-t border-slate-800">
+                <button onclick="resetDemoData()" class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-700/70 transition-colors">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>Възстанови демо данните</span>
+                </button>
+                <div class="mt-3 text-center text-[11px] text-slate-500">
+                    Валута: Само Евро (€) • v2.4 Cloud
+                </div>
+            </div>
+        </aside>
+
+        <!-- Основна работна зона -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Горна лента (Top Header) -->
+            <header class="bg-white border-b border-slate-200 px-4 sm:px-6 py-3.5 flex items-center justify-between shadow-sm z-30">
+                <div class="flex items-center gap-3">
+                    <button id="open-sidebar" class="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100">
+                        <i class="fa-solid fa-bars text-lg"></i>
+                    </button>
+                    <div>
+                        <h1 id="page-title" class="text-lg sm:text-xl font-bold text-slate-800">Табло за управление (CEO & ПТО)</h1>
+                        <p id="page-subtitle" class="text-xs text-slate-500 hidden sm:block">Оперативен контрол на себестойността, изпълнението и паричните потоци в реално време</p>
+                    </div>
+                </div>
+
+                <!-- Статус на B2B Лиценза и Бутон за Активация -->
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <div id="license-badge" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                        <i class="fa-solid fa-clock"></i>
+                        <span id="license-status-text">7-дневен Тестов Режим</span>
+                    </div>
+                    <button onclick="openLicenseModal()" class="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-medium px-3.5 py-2 rounded-lg shadow-sm transition-all">
+                        <i class="fa-solid fa-key text-amber-400"></i>
+                        <span>Лиценз / Абонамент</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Контейнер за съдържанието на модулите -->
+            <main class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+
+                <!-- ========================================================= -->
+                <!-- МОДУЛ 1: ТАБЛО ЗА УПРАВЛЕНИЕ (DASHBOARD)                  -->
+                <!-- ========================================================= -->
+                <section id="tab-dashboard" class="tab-content space-y-6">
+                    <!-- KPI Карти -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- Общ бюджет -->
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Общ Бюджет (Оферта)</span>
+                                <div class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                                    <i class="fa-solid fa-euro-sign"></i>
+                                </div>
+                            </div>
+                            <div id="kpi-total-budget" class="mt-3 text-2xl font-extrabold text-slate-800">0.00 €</div>
+                            <div class="mt-1 text-xs text-slate-500 flex items-center gap-1">
+                                <span class="text-blue-600 font-medium">100%</span> договорен обем СМР
+                            </div>
+                        </div>
+
+                        <!-- Изпълнено до момента (Акт 19) -->
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Изпълнено (Акт 19)</span>
+                                <div class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                    <i class="fa-solid fa-check-double"></i>
+                                </div>
+                            </div>
+                            <div id="kpi-completed-value" class="mt-3 text-2xl font-extrabold text-slate-800">0.00 €</div>
+                            <div class="mt-1 text-xs text-slate-500 flex items-center gap-1">
+                                <span id="kpi-completed-pct" class="text-emerald-600 font-bold">0%</span> физическо изпълнение
+                            </div>
+                        </div>
+
+                        <!-- Реални разходи -->
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Реални Разходи (Факт)</span>
+                                <div class="w-9 h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                                    <i class="fa-solid fa-receipt"></i>
+                                </div>
+                            </div>
+                            <div id="kpi-actual-cost" class="mt-3 text-2xl font-extrabold text-slate-800">0.00 €</div>
+                            <div class="mt-1 text-xs text-slate-500">
+                                Вложени материали, труд и механизация
+                            </div>
+                        </div>
+
+                        <!-- Прогнозна чиста печалба -->
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Текущ Марж / Печалба</span>
+                                <div class="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                                    <i class="fa-solid fa-chart-line"></i>
+                                </div>
+                            </div>
+                            <div id="kpi-profit-value" class="mt-3 text-2xl font-extrabold text-emerald-600">0.00 €</div>
+                            <div class="mt-1 text-xs text-slate-500 flex items-center gap-1">
+                                Рентабилност: <span id="kpi-profit-pct" class="font-bold text-slate-700">0.0%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Графика и Аларми за преразход -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Chart.js Паричен поток и СМР -->
+                        <div class="lg:col-span-2 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
+                                <div>
+                                    <h2 class="text-base font-bold text-slate-800">Паричен поток и Изпълнение на СМР (€)</h2>
+                                    <p class="text-xs text-slate-500">Сравнение на планиран бюджет срещу реално актувани СМР и директни разходи</p>
+                                </div>
+                                <span class="text-xs font-medium px-2.5 py-1 bg-slate-100 text-slate-600 rounded-md self-start">2026 г. (EUR)</span>
+                            </div>
+                            <div class="relative h-72 w-full">
+                                <canvas id="cashflowChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Индикатор за преразход (Червени аларми) -->
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-3">
+                                    <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                                        <i class="fa-solid fa-triangle-exclamation text-rose-500"></i>
+                                        <span>Контрол на Преразхода</span>
+                                    </h2>
+                                    <span id="overrun-count-badge" class="px-2 py-0.5 text-xs font-bold bg-rose-100 text-rose-700 rounded-full">0 аларми</span>
+                                </div>
+                                <p class="text-xs text-slate-500 mb-4">Автоматично засичане на СМР позиции, при които реалният разход надвишава заложената себестойност.</p>
+                                
+                                <div id="overrun-alerts-list" class="space-y-3 max-h-60 overflow-y-auto pr-1">
+                                    <!-- Генерира се динамично от JS -->
+                                </div>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-slate-100">
+                                <button onclick="switchTab('akt19')" class="w-full text-center text-xs font-semibold text-blue-600 hover:text-blue-800">
+                                    Провери детайлите в Дигитален Акт 19 →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ========================================================= -->
+                <!-- МОДУЛ 2: КСС & АНАЛИЗНИ ЦЕНИ (ОФЕРИРАНЕ)                  -->
+                <!-- ========================================================= -->
+                <section id="tab-kss" class="tab-content hidden space-y-6">
+                    <!-- Горна лента с действия -->
+                    <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-base font-bold text-slate-800">Количествено-стойностна сметка (КСС) и Единични анализни цени</h2>
+                            <p class="text-xs text-slate-500">Автоматично калкулиране на себестойност (Труд + Материали + Механизация) и печалба в Евро (€)</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button onclick="exportKSSToCSV()" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-medium px-4 py-2.5 rounded-lg shadow-sm transition-colors">
+                                <i class="fa-solid fa-file-excel"></i>
+                                <span>Експорт Оферта / КСС (CSV/Excel)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Форма за добавяне на нова позиция в КСС -->
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-plus-circle text-blue-600"></i>
+                            <span>Добави нова позиция в КСС (Бърз анализ)</span>
+                        </h3>
+                        <form id="add-kss-form" onsubmit="addKSSItem(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-8 gap-3">
+                            <div class="lg:col-span-2">
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Наименование на СМР</label>
+                                <input type="text" id="new-name" required placeholder="напр. Машинна гипсова мазилка" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Мярка</label>
+                                <select id="new-unit" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 bg-white">
+                                    <option value="м²">м²</option>
+                                    <option value="м³">м³</option>
+                                    <option value="кг">кг</option>
+                                    <option value="л.м.">л.м.</option>
+                                    <option value="бр.">бр.</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Количество</label>
+                                <input type="number" step="0.01" min="0.1" id="new-qty" required placeholder="100" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Труд (€/ед.)</label>
+                                <input type="number" step="0.01" min="0" id="new-labor" required placeholder="6.50" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Материали (€/ед.)</label>
+                                <input type="number" step="0.01" min="0" id="new-material" required placeholder="4.20" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Механ. (€) / Печалба %</label>
+                                <div class="flex gap-1">
+                                    <input type="number" step="0.01" min="0" id="new-mech" value="0.50" title="Механизация (€)" class="w-1/2 px-2 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500">
+                                    <input type="number" step="1" min="0" max="100" id="new-profit" value="15" title="Доп. разходи и Печалба (%)" class="w-1/2 px-2 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500">
+                                </div>
+                            </div>
+                            <div class="flex items-end">
+                                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-2 px-3 rounded-lg shadow-sm transition-colors">
+                                    + Добави
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Таблица КСС -->
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-50 border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
+                                        <th class="py-3.5 px-4">№</th>
+                                        <th class="py-3.5 px-4">Вид СМР</th>
+                                        <th class="py-3.5 px-3 text-center">Мярка</th>
+                                        <th class="py-3.5 px-3 text-right">К-во</th>
+                                        <th class="py-3.5 px-3 text-right">Труд (€)</th>
+                                        <th class="py-3.5 px-3 text-right">Материали (€)</th>
+                                        <th class="py-3.5 px-3 text-right">Механ. (€)</th>
+                                        <th class="py-3.5 px-3 text-right">Доп.+Печ. %</th>
+                                        <th class="py-3.5 px-3 text-right bg-blue-50/50 text-blue-800">Ед. Анализна Цена (€)</th>
+                                        <th class="py-3.5 px-4 text-right bg-slate-100/70 text-slate-800">Обща Стойност (€)</th>
+                                        <th class="py-3.5 px-3 text-center">Действие</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="kss-table-body" class="divide-y divide-slate-100 text-xs sm:text-sm">
+                                    <!-- Попълва се от JS -->
+                                </tbody>
+                                <tfoot>
+                                    <tr class="bg-slate-900 text-white font-bold text-sm">
+                                        <td colspan="9" class="py-3.5 px-4 text-right">ОБЩА ОФЕРТНА СТОЙНОСТ ПО КСС (без ДДС):</td>
+                                        <td id="kss-grand-total" class="py-3.5 px-4 text-right text-emerald-400">0.00 €</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ========================================================= -->
+                <!-- МОДУЛ 3: ДИГИТАЛЕН АКТ 19 (МЕСЕЧНО ОТЧИТАНЕ & ПЛАН/ФАКТ)  -->
+                <!-- ========================================================= -->
+                <section id="tab-akt19" class="tab-content hidden space-y-6">
+                    <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-base font-bold text-slate-800">Месечно отчитане на СМР (Дигитален Протокол Акт 19)</h2>
+                            <p class="text-xs text-slate-500">Въведете изпълнените количества и реално вложените разходи на обекта за автоматичен контрол на бюджета</p>
+                        </div>
+                        <button onclick="openAkt19Modal()" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-medium px-4 py-2.5 rounded-lg shadow-sm transition-colors">
+                            <i class="fa-solid fa-print"></i>
+                            <span>Генерирай Протокол Акт 19 (Печат / PDF)</span>
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-50 border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
+                                        <th class="py-3.5 px-4">Вид СМР</th>
+                                        <th class="py-3.5 px-3 text-right">Договорно К-во</th>
+                                        <th class="py-3.5 px-3 text-right">Ед. Цена (€)</th>
+                                        <th class="py-3.5 px-3 text-right bg-blue-50/40 text-blue-800">Изпълнено К-во (Текущо)</th>
+                                        <th class="py-3.5 px-3 text-center">Изпълнение %</th>
+                                        <th class="py-3.5 px-3 text-right">Остатък К-во</th>
+                                        <th class="py-3.5 px-3 text-right bg-emerald-50/40 text-emerald-800">Сума за Актуване (€)</th>
+                                        <th class="py-3.5 px-3 text-right bg-amber-50/40 text-amber-800">Реален Разход (€)</th>
+                                        <th class="py-3.5 px-4 text-right">Отклонение Бюджет (€)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="akt19-table-body" class="divide-y divide-slate-100 text-xs sm:text-sm">
+                                    <!-- Попълва се от JS -->
+                                </tbody>
+                                <tfoot>
+                                    <tr class="bg-slate-100 font-bold text-slate-800 text-xs sm:text-sm border-t-2 border-slate-300">
+                                        <td colspan="6" class="py-3.5 px-4 text-right">ОБЩО АКТУВАНИ СМР И РЕАЛНИ РАЗХОДИ:</td>
+                                        <td id="akt19-total-billed" class="py-3.5 px-3 text-right text-emerald-700">0.00 €</td>
+                                        <td id="akt19-total-cost" class="py-3.5 px-3 text-right text-amber-700">0.00 €</td>
+                                        <td id="akt19-total-variance" class="py-3.5 px-4 text-right">0.00 €</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ========================================================= -->
+                <!-- МОДУЛ 4: ЛИНЕЕН ГРАФИК & ПАРИЧЕН ПОТОК (GANTT & CASHFLOW) -->
+                <!-- ========================================================= -->
+                <section id="tab-gantt" class="tab-content hidden space-y-6">
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="mb-4">
+                            <h2 class="text-base font-bold text-slate-800">Линеен график на строителството (Gantt) - 8 Месеца</h2>
+                            <p class="text-xs text-slate-500">Обвързване на строителните етапи с прогнозните разходи и очакваните траншове от инвеститора в Евро (€)</p>
+                        </div>
+
+                        <!-- Визуална Gantt Диаграма -->
+                        <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                            <table class="w-full text-left border-collapse min-w-[750px]">
+                                <thead>
+                                    <tr class="bg-slate-800 text-white text-xs">
+                                        <th class="py-3 px-4 w-56">Етап на строителството</th>
+                                        <th class="py-3 px-2 text-center border-l border-slate-700">Месец 1</th>
+                                        <th class="py-3 px-2 text-center border-l border-slate-700">Месец 2</th>
+                                        <th class="py-3 px-2 text-center border-l border-slate-700">Месец 3</th>
+                                        <th class="py-3 px-2 text-center border-l border-slate-700">Месец 4</th>
+                                        <th class="py-3 px-2 text-center border-l border-slate-700">Месец 5</th>
+                                        <th class="py-3 px-2 text-center border-l border-slate-700">Месец 6</th>
+                                        <th class="py-3 px-2 text-center border-l border-slate-700">Месец 7</th>
+                                        <th class="py-3 px-2 text-center border-l border-slate-700">Месец 8</th>
+                                        <th class="py-3 px-4 text-right border-l border-slate-700">Бюджет Етап (€)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="gantt-table-body" class="divide-y divide-slate-200 text-xs">
+                                    <!-- Попълва се от JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Таблица Парични Потоци по месеци -->
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 class="text-base font-bold text-slate-800 mb-3">Прогнозен Паричен Поток (Cashflow) по месеци (€)</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse min-w-[750px]">
+                                <thead>
+                                    <tr class="bg-slate-50 border-b border-slate-200 text-[11px] uppercase text-slate-500 font-semibold">
+                                        <th class="py-3 px-4">Показател (€)</th>
+                                        <th class="py-3 px-2 text-right">Мес. 1</th>
+                                        <th class="py-3 px-2 text-right">Мес. 2</th>
+                                        <th class="py-3 px-2 text-right">Мес. 3</th>
+                                        <th class="py-3 px-2 text-right">Мес. 4</th>
+                                        <th class="py-3 px-2 text-right">Мес. 5</th>
+                                        <th class="py-3 px-2 text-right">Мес. 6</th>
+                                        <th class="py-3 px-2 text-right">Мес. 7</th>
+                                        <th class="py-3 px-2 text-right">Мес. 8</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cashflow-table-body" class="divide-y divide-slate-100 text-xs">
+                                    <!-- Попълва се от JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ========================================================= -->
+                <!-- МОДУЛ 5: ПОДИЗПЪЛНИТЕЛИ & ТЪРГОВЕ                         -->
+                <!-- ========================================================= -->
+                <section id="tab-subcontractors" class="tab-content hidden space-y-6">
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="px-2.5 py-0.5 text-[11px] font-bold bg-blue-100 text-blue-700 rounded-full">АКТИВЕН ТЪРГ #2026-04</span>
+                                <h2 class="text-base font-bold text-slate-800">Конкурс за избор на подизпълнител: „Груба зидария и мазилки“</h2>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-1">Автоматично сравнение на подадените оферти по единични цени, срок и вътрешен рейтинг</p>
+                        </div>
+                    </div>
+
+                    <!-- Карти за сравнение на 3-ма подизпълнители -->
+                    <div id="subcontractors-grid" class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <!-- Попълва се от JS -->
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- МОДАЛЕН ПРОЗОРЕЦ: ЛИЦЕНЗИРАНЕ И B2B АБОНАМЕНТ             -->
+    <!-- ========================================================= -->
+    <div id="license-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-3xl w-full shadow-2xl border border-slate-200 overflow-hidden animate-fade-in">
+            <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-crown text-amber-400 text-lg"></i>
+                    <h3 class="font-bold text-base sm:text-lg">B2B Абонаментни Планове & Активация (EUR)</h3>
+                </div>
+                <button onclick="closeLicenseModal()" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-6 max-h-[85vh] overflow-y-auto">
+                <!-- Ценови планове -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- План Старт -->
+                    <div class="border border-slate-200 rounded-xl p-4 flex flex-col justify-between">
+                        <div>
+                            <span class="text-xs font-bold uppercase text-slate-400">ПТО Старт</span>
+                            <div class="mt-2 text-2xl font-extrabold text-slate-800">149 € <span class="text-xs font-normal text-slate-500">/ мес.</span></div>
+                            <ul class="mt-3 space-y-2 text-xs text-slate-600">
+                                <li><i class="fa-solid fa-check text-emerald-500 mr-1.5"></i> До 3 активни обекта</li>
+                                <li><i class="fa-solid fa-check text-emerald-500 mr-1.5"></i> КСС и Анализни цени</li>
+                                <li><i class="fa-solid fa-check text-emerald-500 mr-1.5"></i> Дигитален Акт 19</li>
+                            </ul>
+                        </div>
+                        <button onclick="selectPlan('ПТО Старт', 149)" class="mt-4 w-full py-2 px-3 rounded-lg border border-slate-300 hover:bg-slate-50 text-xs font-semibold text-slate-700 transition-colors">
+                            Избери & Указания за превод
+                        </button>
+                    </div>
+
+                    <!-- План Про -->
+                    <div class="border-2 border-blue-600 rounded-xl p-4 flex flex-col justify-between relative bg-blue-50/20">
+                        <span class="absolute -top-2.5 right-3 bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">НАЙ-ИЗБИРАН</span>
+                        <div>
+                            <span class="text-xs font-bold uppercase text-blue-600">ПТО Про</span>
+                            <div class="mt-2 text-2xl font-extrabold text-slate-800">349 € <span class="text-xs font-normal text-slate-500">/ мес.</span></div>
+                            <ul class="mt-3 space-y-2 text-xs text-slate-600">
+                                <li><i class="fa-solid fa-check text-emerald-500 mr-1.5"></i> До 12 активни обекта</li>
+                                <li><i class="fa-solid fa-check text-emerald-500 mr-1.5"></i> Търгове за подизпълнители</li>
+                                <li><i class="fa-solid fa-check text-emerald-500 mr-1.5"></i> Линеен график & Cashflow</li>
+                                <li><i class="fa-solid fa-check text-emerald-500 mr-1.5"></i> Експорт Excel / PDF</li>
+                            </ul>
+                        </div>
+                        <button onclick="selectPlan('ПТО Про', 349)" class="mt-4 w-full py-2 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-xs font-semibold text-white transition-colors">
+                            Избери & Указания за превод
+                        </button>
+                    </div>
+
+                    <!-- План Корпоративен -->
+                    <div class="border border-slate-200 rounded-xl p-4 flex flex-col justify-between">
+                        <div>
+                            <span class="text-xs font-bold uppercase text-indigo-600">Корпоративен</span>
+                            <div class="mt-2 text-2xl font-extrabold text-slate-800">690 € <span class="text-xs font-normal text-slate-500">/ мес.</span></div>
+                            <ul class="mt-3 space-y-2 text-xs text-slate-600">
+                                <li><i class="fa-solid fa-check text-emerald-500 mr-1.5"></i> Неограничени обекти и екип</li>
+                                <li><i class="fa-solid fa-check text-emerald-500 mr-1.5"></i> Брандирани бланки и Акт 19</li>
+                                <li><i class="fa-solid fa-check text-emerald-500 mr-1.5"></i> Директна поддръжка 24/7</li>
+                            </ul>
+                        </div>
+                        <button onclick="selectPlan('Корпоративен', 690)" class="mt-4 w-full py-2 px-3 rounded-lg border border-slate-300 hover:bg-slate-50 text-xs font-semibold text-slate-700 transition-colors">
+                            Избери & Указания за превод
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 100% Дистанционно плащане по банков път към физическо лице -->
+                <div id="remote-payment-box" class="bg-blue-50/50 border border-blue-200 rounded-xl p-4 sm:p-5 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-blue-200/80 pb-3">
+                        <div>
+                            <span class="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-blue-700 bg-blue-100 px-2.5 py-0.5 rounded-full">
+                                <i class="fa-solid fa-globe"></i> 100% Дистанционно Плащане (Без посещение на място)
+                            </span>
+                            <h4 class="text-sm font-bold text-slate-800 mt-1.5">Банков превод в EUR (€) към физическо лице</h4>
+                            <p class="text-xs text-slate-600">Преводът може да се извърши дистанционно през онлайн банкиране, банков клон или директен превод в евро.</p>
+                        </div>
+                        <div class="text-left sm:text-right bg-white px-3.5 py-2 rounded-lg border border-blue-200 shrink-0">
+                            <div class="text-[10px] uppercase font-semibold text-slate-400">Избран план / Сума</div>
+                            <div id="payment-selected-plan" class="text-xs font-bold text-blue-700">ПТО Про</div>
+                            <div id="payment-selected-amount" class="text-lg font-extrabold text-slate-900">349.00 €</div>
+                        </div>
+                    </div>
+
+                    <!-- Данни за превода с бутони за копиране -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div class="bg-white p-3 rounded-lg border border-slate-200 flex items-center justify-between gap-2">
+                            <div class="min-w-0">
+                                <span class="text-[10px] uppercase font-semibold text-slate-400 block">Получател (Физическо лице)</span>
+                                <span id="pay-recipient" class="font-bold text-slate-800 block truncate">Цветелина Здравкова Стоянова</span>
+                            </div>
+                            <button type="button" onclick="copyPaymentField('pay-recipient', 'Получателят')" class="shrink-0 px-2.5 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-[11px] flex items-center gap-1 transition-colors">
+                                <i class="fa-regular fa-copy"></i> Копирай
+                            </button>
+                        </div>
+
+                        <div class="bg-white p-3 rounded-lg border border-slate-200 flex items-center justify-between gap-2">
+                            <div class="min-w-0">
+                                <span class="text-[10px] uppercase font-semibold text-slate-400 block">BIC код</span>
+                                <span id="pay-bic" class="font-mono font-bold text-slate-800 block">ESPYBGS1</span>
+                            </div>
+                            <button type="button" onclick="copyPaymentField('pay-bic', 'BIC кодът')" class="shrink-0 px-2.5 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-[11px] flex items-center gap-1 transition-colors">
+                                <i class="fa-regular fa-copy"></i> Копирай
+                            </button>
+                        </div>
+
+                        <div class="bg-white p-3 rounded-lg border border-slate-200 flex items-center justify-between gap-2">
+                            <div class="min-w-0">
+                                <span class="text-[10px] uppercase font-semibold text-slate-400 block">IBAN сметка</span>
+                                <span id="pay-iban" class="font-mono font-bold text-blue-800 block truncate">BG03ESPY40040038432460</span>
+                            </div>
+                            <button type="button" onclick="copyPaymentField('pay-iban', 'IBAN сметката')" class="shrink-0 px-2.5 py-1.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-[11px] flex items-center gap-1 transition-colors">
+                                <i class="fa-regular fa-copy"></i> Копирай
+                            </button>
+                        </div>
+
+                        <div class="bg-white p-3 rounded-lg border border-slate-200 flex items-center justify-between gap-2">
+                            <div class="min-w-0">
+                                <span class="text-[10px] uppercase font-semibold text-slate-400 block">Основание за превод</span>
+                                <span id="pay-reference" class="font-semibold text-slate-800 block truncate">Абонамент BuildCost Pro - ПТО Про</span>
+                            </div>
+                            <button type="button" onclick="copyPaymentField('pay-reference', 'Основанието за превод')" class="shrink-0 px-2.5 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-[11px] flex items-center gap-1 transition-colors">
+                                <i class="fa-regular fa-copy"></i> Копирай
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Контекст за основание (Фирма / Имейл) + Бутон за документ за печат/PDF -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                        <div class="flex-1">
+                            <label for="payer-ref-input" class="block text-[11px] font-semibold text-slate-600 mb-1">
+                                Добавете име на фирма или имейл за основанието на превода (по избор):
+                            </label>
+                            <input type="text" id="payer-ref-input" oninput="updatePaymentReference()" placeholder="напр. Контракт Сити ООД / pto@firma.bg" class="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500">
+                        </div>
+                        <button type="button" onclick="openPaymentInstructionsModal()" class="sm:self-end bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center justify-center gap-2 shrink-0 transition-colors">
+                            <i class="fa-solid fa-file-invoice"></i>
+                            <span>Указания за превод (Печат / PDF)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Поле за въвеждане на лицензионен ключ -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Имате издаден лицензионен ключ? Въведете го тук:</label>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <input type="text" id="license-key-input" placeholder="Въведете ключ (напр. CONTRACT2026)" class="flex-1 px-3.5 py-2 text-sm border border-slate-300 rounded-lg uppercase font-mono focus:outline-none focus:border-blue-500">
+                        <button onclick="activateLicenseKey()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-5 py-2 rounded-lg transition-colors">
+                            Активирай Лиценза
+                        </button>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-2">
+                        <i class="fa-solid fa-circle-info text-blue-500 mr-1"></i>
+                        Тестов корпоративен ключ за демонстрация: <code class="bg-slate-200 px-1.5 py-0.5 rounded font-bold text-slate-800">CONTRACT2026</code>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- МОДАЛЕН ПРОЗОРЕЦ ЗА ПЕЧАТ / PDF (АКТ 19 И ДОГОВОРИ)       -->
+    <!-- ========================================================= -->
+    <div id="document-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-4xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-slate-900 text-white px-6 py-3.5 flex items-center justify-between no-print">
+                <h3 id="doc-modal-title" class="font-bold text-base">Официален Документ</h3>
+                <div class="flex items-center gap-2">
+                    <button onclick="copyDocumentText()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+                        <i class="fa-regular fa-copy"></i> Копирай текста
+                    </button>
+                    <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+                        <i class="fa-solid fa-print"></i> Принтирай / Запази PDF
+                    </button>
+                    <button onclick="closeDocumentModal()" class="text-slate-400 hover:text-white ml-2">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="print-area" class="p-6 sm:p-10 overflow-y-auto bg-white text-slate-900 text-sm leading-relaxed">
+                <!-- Генерираното съдържание на Акт 19 или Договор -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- JAVASCRIPT ЛОГИКА И ДАННИ                                 -->
+    <!-- ========================================================= -->
+    <script>
+        // --- 1. НАЧАЛНИ РЕАЛИСТИЧНИ ДАННИ (КОНТРАКТ СИТИ ООД) ---
+        const DEFAULT_KSS_DATA = [
+            { id: 1, name: "Масов изкоп с багер и извозване на земни маси", unit: "м³", qty: 1450, labor: 4.50, material: 0.00, mech: 9.80, profitPct: 15, completedQty: 1450, actualCost: 21500 },
+            { id: 2, name: "Кофраж за фундаменти, колони и плочи (системен)", unit: "м²", qty: 3200, labor: 14.00, material: 6.50, mech: 1.50, profitPct: 18, completedQty: 2600, actualCost: 59800 },
+            { id: 3, name: "Доставка и монтаж на армировка B500B", unit: "кг", qty: 85000, labor: 0.38, material: 0.92, mech: 0.05, profitPct: 15, completedQty: 68000, actualCost: 96500 },
+            { id: 4, name: "Доставка и полагане на бетон C25/30 с бетонпомпа", unit: "м³", qty: 1120, labor: 12.00, material: 84.00, mech: 8.50, profitPct: 16, completedQty: 890, actualCost: 92400 },
+            { id: 5, name: "Зидария с керамични блокове Wienerberger 25 см", unit: "м³", qty: 480, labor: 26.00, material: 78.00, mech: 3.00, profitPct: 18, completedQty: 210, actualCost: 21900 },
+            { id: 6, name: "Фасадна топлоизолационна система с EPS 12 см", unit: "м²", qty: 2450, labor: 18.50, material: 24.00, mech: 2.50, profitPct: 20, completedQty: 350, actualCost: 15100 }
+        ];
+
+        const GANTT_STAGES = [
+            { stage: "1. Земни работи и укрепване", months: [1, 1, 0, 0, 0, 0, 0, 0], budget: 24000, color: "bg-amber-500" },
+            { stage: "2. Фундаменти и хидроизолация", months: [0, 1, 1, 0, 0, 0, 0, 0], budget: 68000, color: "bg-blue-600" },
+            { stage: "3. Груб строеж (Кофраж, Бетон, Арм.)", months: [0, 0, 1, 1, 1, 0, 0, 0], budget: 215000, color: "bg-indigo-600" },
+            { stage: "4. Зидарии и покривни работи", months: [0, 0, 0, 0, 1, 1, 0, 0], budget: 64000, color: "bg-cyan-600" },
+            { stage: "5. Дограма и Топлоизолация (Фасада)", months: [0, 0, 0, 0, 0, 1, 1, 0], budget: 132000, color: "bg-emerald-600" },
+            { stage: "6. Ел., ВиК и ОВК инсталации", months: [0, 0, 0, 1, 1, 1, 1, 0], budget: 89000, color: "bg-purple-600" },
+            { stage: "7. Вътрешни мазилки и замазки", months: [0, 0, 0, 0, 0, 0, 1, 1], budget: 54000, color: "bg-rose-500" }
+        ];
+
+        const SUBCONTRACTORS_DATA = [
+            {
+                id: "sub1",
+                company: "СтройМонтаж БГ ЕООД",
+                eik: "204589123",
+                manager: "инж. Георги Димитров",
+                unitPriceMasonry: 23.50,
+                unitPricePlaster: 8.20,
+                totalOffer: 48650,
+                days: 42,
+                rating: 4.9,
+                recommended: true,
+                note: "Най-ниска обща цена, собствено скеле и 18 квалифицирани зидари."
+            },
+            {
+                id: "sub2",
+                company: "Алфа Билд Груп ООД",
+                eik: "201994511",
+                manager: "инж. Стоян Петров",
+                unitPriceMasonry: 26.00,
+                unitPricePlaster: 9.10,
+                totalOffer: 53900,
+                days: 38,
+                rating: 4.6,
+                recommended: false,
+                note: "Най-кратък срок на изпълнение, но с 10.8% по-висока офертна цена."
+            },
+            {
+                id: "sub3",
+                company: "МегаЗид Инженеринг ЕООД",
+                eik: "205772310",
+                manager: "Николай Василев",
+                unitPriceMasonry: 25.00,
+                unitPricePlaster: 8.90,
+                totalOffer: 52100,
+                days: 50,
+                rating: 4.1,
+                recommended: false,
+                note: "Изисква 40% авансово плащане при подписване на договора."
+            }
+        ];
+
+        // Състояние на приложението (зарежда се от localStorage)
+        let kssItems = JSON.parse(localStorage.getItem('buildcost_kss')) || JSON.parse(JSON.stringify(DEFAULT_KSS_DATA));
+        let licenseInfo = JSON.parse(localStorage.getItem('buildcost_license')) || { active: false, plan: "7-дневен Тестов Режим" };
+        let selectedPaymentPlan = { name: "ПТО Про", amount: 349 };
+        let cashflowChartInstance = null;
+
+        // --- 2. ПОМОЩНИ ФУНКЦИИ ---
+        function formatEUR(num) {
+            return Number(num).toLocaleString('bg-BG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+        }
+
+        function calcUnitCost(item) {
+            return Number(item.labor) + Number(item.material) + Number(item.mech);
+        }
+
+        function calcUnitPrice(item) {
+            const directCost = calcUnitCost(item);
+            return directCost * (1 + Number(item.profitPct) / 100);
+        }
+
+        function saveState() {
+            localStorage.setItem('buildcost_kss', JSON.stringify(kssItems));
+            localStorage.setItem('buildcost_license', JSON.stringify(licenseInfo));
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgClass = type === 'error' ? 'bg-rose-600' : (type === 'info' ? 'bg-blue-600' : 'bg-emerald-600');
+            const iconClass = type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check';
+            
+            toast.className = `${bgClass} text-white px-4 py-3 rounded-xl shadow-lg text-xs sm:text-sm font-medium flex items-center gap-2.5 transition-all duration-300`;
+            toast.innerHTML = `<i class="fa-solid ${iconClass}"></i><span>${message}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
+
+        function resetDemoData() {
+            kssItems = JSON.parse(JSON.stringify(DEFAULT_KSS_DATA));
+            saveState();
+            renderAll();
+            showToast('Демо данните за обект ЖС „Хоризонт“ са възстановени!', 'info');
+        }
+
+        // --- 3. НАВИГАЦИЯ МЕЖДУ МОДУЛИТЕ ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('text-slate-300');
+            });
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            activeBtn.classList.remove('text-slate-300');
+            activeBtn.classList.add('bg-blue-600', 'text-white');
+
+            const titles = {
+                dashboard: ["Табло за управление (CEO & ПТО)", "Оперативен контрол на себестойността, изпълнението и паричните потоци в реално време"],
+                kss: ["КСС & Анализни цени (Офериране)", "Калкулиране на разходни норми за труд, материали, механизация и офертна цена в €"],
+                akt19: ["Дигитален Акт 19 (Месечно отчитане)", "Отчитане на изпълнените СМР на обекта и автоматичен контрол План срещу Факт"],
+                gantt: ["Линеен график & Паричен поток", "Календарно планиране на строителните етапи и прогнозни плащания в Евро (€)"],
+                subcontractors: ["Подизпълнители & Търгове", "Сравнение на оферти, избор на изпълнител и автоматично генериране на договор по ЗЗД"]
+            };
+
+            document.getElementById('page-title').textContent = titles[tabId][0];
+            document.getElementById('page-subtitle').textContent = titles[tabId][1];
+
+            // Затваряне на мобилното меню
+            document.getElementById('sidebar').classList.add('-translate-x-full');
+
+            if (tabId === 'dashboard') {
+                updateChart();
+            }
+        }
+
+        // Мобилно меню събития
+        document.getElementById('open-sidebar').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.remove('-translate-x-full');
+        });
+        document.getElementById('close-sidebar').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.add('-translate-x-full');
+        });
+
+        // --- 4. РЕНДЕРИРАНЕ НА МОДУЛ 1: DASHBOARD ---
+        function renderDashboard() {
+            let totalBudget = 0;
+            let totalCompletedValue = 0;
+            let totalActualCost = 0;
+            const overruns = [];
+
+            kssItems.forEach(item => {
+                const unitPrice = calcUnitPrice(item);
+                const unitDirectCost = calcUnitCost(item);
+
+                const itemTotalBudget = unitPrice * item.qty;
+                const itemCompletedVal = unitPrice * item.completedQty;
+                const plannedCostForCompleted = unitDirectCost * item.completedQty;
+
+                totalBudget += itemTotalBudget;
+                totalCompletedValue += itemCompletedVal;
+                totalActualCost += Number(item.actualCost);
+
+                // Проверка за преразход спрямо заложената директна себестойност за изпълненото количество
+                if (item.actualCost > plannedCostForCompleted && item.completedQty > 0) {
+                    const diff = item.actualCost - plannedCostForCompleted;
+                    overruns.push({
+                        name: item.name,
+                        diff: diff,
+                        planned: plannedCostForCompleted,
+                        actual: item.actualCost
+                    });
+                }
+            });
+
+            const completedPct = totalBudget > 0 ? (totalCompletedValue / totalBudget) * 100 : 0;
+            const currentProfit = totalCompletedValue - totalActualCost;
+            const profitPct = totalCompletedValue > 0 ? (currentProfit / totalCompletedValue) * 100 : 0;
+
+            document.getElementById('kpi-total-budget').textContent = formatEUR(totalBudget);
+            document.getElementById('kpi-completed-value').textContent = formatEUR(totalCompletedValue);
+            document.getElementById('kpi-completed-pct').textContent = completedPct.toFixed(1) + '%';
+            document.getElementById('kpi-actual-cost').textContent = formatEUR(totalActualCost);
+
+            const profitEl = document.getElementById('kpi-profit-value');
+            profitEl.textContent = formatEUR(currentProfit);
+            profitEl.className = `mt-3 text-2xl font-extrabold ${currentProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+            document.getElementById('kpi-profit-pct').textContent = profitPct.toFixed(1) + '%';
+
+            // Аларми за преразход
+            const alertsContainer = document.getElementById('overrun-alerts-list');
+            const badge = document.getElementById('overrun-count-badge');
+            badge.textContent = `${overruns.length} ${overruns.length === 1 ? 'аларма' : 'аларми'}`;
+
+            if (overruns.length === 0) {
+                badge.className = "px-2 py-0.5 text-xs font-bold bg-emerald-100 text-emerald-700 rounded-full";
+                alertsContainer.innerHTML = `
+                    <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-3">
+                        <i class="fa-solid fa-shield-check text-lg text-emerald-600"></i>
+                        <div>
+                            <div class="font-bold">Няма засечен преразход!</div>
+                            <div class="text-emerald-700 mt-0.5">Всички изпълнени СМР се движат в рамките на заложените разходни норми.</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                badge.className = "px-2 py-0.5 text-xs font-bold bg-rose-100 text-rose-700 rounded-full";
+                alertsContainer.innerHTML = overruns.map(o => `
+                    <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs">
+                        <div class="flex items-start justify-between gap-2">
+                            <span class="font-bold text-rose-900 leading-snug">${o.name}</span>
+                            <span class="shrink-0 font-extrabold text-rose-600">+${formatEUR(o.diff)}</span>
+                        </div>
+                        <div class="mt-1.5 flex items-center justify-between text-[11px] text-rose-700">
+                            <span>План себест.: ${formatEUR(o.planned)}</span>
+                            <span>Факт: ${formatEUR(o.actual)}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            updateChart();
+        }
+
+        function updateChart() {
+            const ctx = document.getElementById('cashflowChart');
+            if (!ctx) return;
+
+            if (cashflowChartInstance) {
+                cashflowChartInstance.destroy();
+            }
+
+            cashflowChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Мес. 1', 'Мес. 2', 'Мес. 3', 'Мес. 4', 'Мес. 5', 'Мес. 6', 'Мес. 7', 'Мес. 8'],
+                    datasets: [
+                        {
+                            label: 'Планиран Бюджет СМР (€)',
+                            data: [24000, 46000, 95000, 110000, 125000, 108000, 88000, 50000],
+                            backgroundColor: '#cbd5e1',
+                            borderRadius: 6
+                        },
+                        {
+                            label: 'Реално Актувано Акт 19 (€)',
+                            data: [23800, 47200, 93500, 108400, 84500, 0, 0, 0],
+                            backgroundColor: '#2563eb',
+                            borderRadius: 6
+                        },
+                        {
+                            label: 'Реални Разходи Материали/Труд (€)',
+                            data: [19500, 39800, 79200, 94100, 74600, 0, 0, 0],
+                            backgroundColor: '#10b981',
+                            borderRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { font: { family: 'Inter', size: 11 } }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: value => value.toLocaleString('bg-BG') + ' €',
+                                font: { size: 11 }
+                            }
+                        },
+                        x: {
+                            ticks: { font: { size: 11 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- 5. РЕНДЕРИРАНЕ НА МОДУЛ 2: КСС & АНАЛИЗНИ ЦЕНИ ---
+        function renderKSS() {
+            const tbody = document.getElementById('kss-table-body');
+            let grandTotal = 0;
+
+            tbody.innerHTML = kssItems.map((item, idx) => {
+                const unitPrice = calcUnitPrice(item);
+                const rowTotal = unitPrice * item.qty;
+                grandTotal += rowTotal;
+
+                return `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="py-3 px-4 font-medium text-slate-400">${idx + 1}</td>
+                        <td class="py-3 px-4 font-semibold text-slate-800">${item.name}</td>
+                        <td class="py-3 px-3 text-center text-slate-500">${item.unit}</td>
+                        <td class="py-3 px-3 text-right font-medium">${Number(item.qty).toLocaleString('bg-BG')}</td>
+                        <td class="py-3 px-3 text-right text-slate-600">${Number(item.labor).toFixed(2)} €</td>
+                        <td class="py-3 px-3 text-right text-slate-600">${Number(item.material).toFixed(2)} €</td>
+                        <td class="py-3 px-3 text-right text-slate-600">${Number(item.mech).toFixed(2)} €</td>
+                        <td class="py-3 px-3 text-right text-slate-600">${item.profitPct}%</td>
+                        <td class="py-3 px-3 text-right font-bold text-blue-700 bg-blue-50/30">${unitPrice.toFixed(2)} €</td>
+                        <td class="py-3 px-4 text-right font-extrabold text-slate-900 bg-slate-50/70">${formatEUR(rowTotal)}</td>
+                        <td class="py-3 px-3 text-center">
+                            <button onclick="deleteKSSItem(${item.id})" title="Изтрий позиция" class="text-slate-400 hover:text-rose-600 p-1">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('kss-grand-total').textContent = formatEUR(grandTotal);
+        }
+
+        function addKSSItem(e) {
+            e.preventDefault();
+            const newItem = {
+                id: Date.now(),
+                name: document.getElementById('new-name').value.trim(),
+                unit: document.getElementById('new-unit').value,
+                qty: parseFloat(document.getElementById('new-qty').value),
+                labor: parseFloat(document.getElementById('new-labor').value),
+                material: parseFloat(document.getElementById('new-material').value),
+                mech: parseFloat(document.getElementById('new-mech').value) || 0,
+                profitPct: parseFloat(document.getElementById('new-profit').value) || 0,
+                completedQty: 0,
+                actualCost: 0
+            };
+
+            kssItems.push(newItem);
+            saveState();
+            renderAll();
+            e.target.reset();
+            document.getElementById('new-mech').value = "0.50";
+            document.getElementById('new-profit').value = "15";
+            showToast('Новата позиция е добавена в КСС и Акт 19!');
+        }
+
+        function deleteKSSItem(id) {
+            kssItems = kssItems.filter(i => i.id !== id);
+            saveState();
+            renderAll();
+            showToast('Позицията беше премахната от КСС.', 'info');
+        }
+
+        function exportKSSToCSV() {
+            let csv = "\uFEFF№;Наименование на СМР;Мярка;Количество;Труд (EUR);Материали (EUR);Механизация (EUR);Печалба (%);Единична Анализна Цена (EUR);Обща Стойност (EUR)\n";
+            let total = 0;
+            kssItems.forEach((item, index) => {
+                const up = calcUnitPrice(item);
+                const rowSum = up * item.qty;
+                total += rowSum;
+                csv += `${index + 1};"${item.name}";${item.unit};${item.qty};${item.labor.toFixed(2)};${item.material.toFixed(2)};${item.mech.toFixed(2)};${item.profitPct};${up.toFixed(2)};${rowSum.toFixed(2)}\n`;
+            });
+            csv += `;;;;;;;;ОБЩО (EUR):;${total.toFixed(2)}\n`;
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'Oferta_KSS_Kontrakt_City_EUR.csv');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('Офертата и КСС са експортирани в CSV/Excel формат!');
+        }
+
+        // --- 6. РЕНДЕРИРАНЕ НА МОДУЛ 3: ДИГИТАЛЕН АКТ 19 ---
+        function renderAkt19() {
+            const tbody = document.getElementById('akt19-table-body');
+            let totalBilled = 0;
+            let totalCost = 0;
+            let totalPlannedCostForCompleted = 0;
+
+            tbody.innerHTML = kssItems.map(item => {
+                const unitPrice = calcUnitPrice(item);
+                const unitDirectCost = calcUnitCost(item);
+                const pct = item.qty > 0 ? Math.min(100, (item.completedQty / item.qty) * 100) : 0;
+                const remaining = Math.max(0, item.qty - item.completedQty);
+                const billedAmount = unitPrice * item.completedQty;
+                const plannedDirectForCompleted = unitDirectCost * item.completedQty;
+                const variance = plannedDirectForCompleted - item.actualCost; // положително = икономия, отрицателно = преразход
+
+                totalBilled += billedAmount;
+                totalCost += Number(item.actualCost);
+                totalPlannedCostForCompleted += plannedDirectForCompleted;
+
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="py-3 px-4 font-semibold text-slate-800">${item.name}</td>
+                        <td class="py-3 px-3 text-right text-slate-600">${item.qty} ${item.unit}</td>
+                        <td class="py-3 px-3 text-right text-slate-600">${unitPrice.toFixed(2)} €</td>
+                        <td class="py-3 px-3 text-right bg-blue-50/30">
+                            <input type="number" step="0.1" min="0" max="${item.qty}" value="${item.completedQty}" 
+                                onchange="updateAkt19Field(${item.id}, 'completedQty', this.value)"
+                                class="w-24 text-right px-2 py-1 text-xs font-bold border border-blue-300 rounded bg-white focus:outline-none focus:border-blue-600">
+                        </td>
+                        <td class="py-3 px-3 text-center">
+                            <div class="w-full bg-slate-200 rounded-full h-2 mb-1">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: ${pct}%"></div>
+                            </div>
+                            <span class="text-[11px] font-bold text-slate-700">${pct.toFixed(0)}%</span>
+                        </td>
+                        <td class="py-3 px-3 text-right text-slate-500">${remaining.toFixed(1)} ${item.unit}</td>
+                        <td class="py-3 px-3 text-right font-bold text-emerald-700 bg-emerald-50/30">${formatEUR(billedAmount)}</td>
+                        <td class="py-3 px-3 text-right bg-amber-50/30">
+                            <input type="number" step="10" min="0" value="${item.actualCost}" 
+                                onchange="updateAkt19Field(${item.id}, 'actualCost', this.value)"
+                                class="w-28 text-right px-2 py-1 text-xs font-bold border border-amber-300 rounded bg-white focus:outline-none focus:border-amber-600">
+                        </td>
+                        <td class="py-3 px-4 text-right font-bold ${variance >= 0 ? 'text-emerald-600' : 'text-rose-600'}">
+                            ${variance >= 0 ? '+' : ''}${formatEUR(variance)}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            const totalVariance = totalPlannedCostForCompleted - totalCost;
+            document.getElementById('akt19-total-billed').textContent = formatEUR(totalBilled);
+            document.getElementById('akt19-total-cost').textContent = formatEUR(totalCost);
+            
+            const varEl = document.getElementById('akt19-total-variance');
+            varEl.textContent = (totalVariance >= 0 ? '+' : '') + formatEUR(totalVariance);
+            varEl.className = `py-3.5 px-4 text-right font-extrabold ${totalVariance >= 0 ? 'text-emerald-700' : 'text-rose-600'}`;
+        }
+
+        function updateAkt19Field(id, field, value) {
+            const item = kssItems.find(i => i.id === id);
+            if (!item) return;
+            let numVal = parseFloat(value) || 0;
+            if (field === 'completedQty' && numVal > item.qty) {
+                numVal = item.qty;
+                showToast('Изпълненото количество не може да надвишава договорното!', 'error');
+            }
+            item[field] = Math.max(0, numVal);
+            saveState();
+            renderAll();
+            showToast('Отчетът по Акт 19 и таблото са обновени!');
+        }
+
+        function openAkt19Modal() {
+            let rowsHtml = '';
+            let sumTotal = 0;
+            let idx = 1;
+
+            kssItems.forEach(item => {
+                if (item.completedQty > 0) {
+                    const up = calcUnitPrice(item);
+                    const total = up * item.completedQty;
+                    sumTotal += total;
+                    rowsHtml += `
+                        <tr class="border-b border-slate-300">
+                            <td class="py-2 px-2 border-r border-slate-300 text-center">${idx++}</td>
+                            <td class="py-2 px-2 border-r border-slate-300">${item.name}</td>
+                            <td class="py-2 px-2 border-r border-slate-300 text-center">${item.unit}</td>
+                            <td class="py-2 px-2 border-r border-slate-300 text-right">${item.completedQty}</td>
+                            <td class="py-2 px-2 border-r border-slate-300 text-right">${up.toFixed(2)} €</td>
+                            <td class="py-2 px-2 text-right font-semibold">${total.toFixed(2)} €</td>
+                        </tr>
+                    `;
+                }
+            });
+
+            const vat = sumTotal * 0.20;
+            const grandTotal = sumTotal + vat;
+
+            document.getElementById('doc-modal-title').textContent = "Протокол Образец 19 (Акт 19) за изплащане на СМР";
+            document.getElementById('print-area').innerHTML = `
+                <div class="border-2 border-slate-800 p-6">
+                    <div class="flex justify-between items-start border-b-2 border-slate-800 pb-4 mb-4">
+                        <div>
+                            <div class="font-bold text-lg uppercase">ПРОТОКОЛ ОБРАЗЕЦ 19</div>
+                            <div class="text-xs text-slate-600">за установяване завършването и заплащане на натурални видове СМР</div>
+                        </div>
+                        <div class="text-right text-xs">
+                            <div><strong>Дата:</strong> ${new Date().toLocaleDateString('bg-BG')} г.</div>
+                            <div><strong>Валута:</strong> ЕВРО (EUR / €)</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 text-xs mb-6 bg-slate-50 p-3 border border-slate-300">
+                        <div>
+                            <p><strong>ОБЕКТ:</strong> Жилищна сграда „Хоризонт“, гр. София</p>
+                            <p><strong>ВЪЗЛОЖИТЕЛ:</strong> „Хоризонт Инвест“ АД</p>
+                        </div>
+                        <div>
+                            <p><strong>ИЗПЪЛНИТЕЛ:</strong> „КОНТРАКТ СИТИ“ ООД</p>
+                            <p><strong>ОТГОВОРНИК ПТО:</strong> Специалист Технически Отдел</p>
+                        </div>
+                    </div>
+
+                    <table class="w-full border border-slate-400 text-xs mb-6">
+                        <thead>
+                            <tr class="bg-slate-200 border-b border-slate-400 font-bold">
+                                <th class="py-2 px-2 border-r border-slate-400 w-10">№</th>
+                                <th class="py-2 px-2 border-r border-slate-400 text-left">Наименование на изпълнените СМР</th>
+                                <th class="py-2 px-2 border-r border-slate-400 w-14">Мярка</th>
+                                <th class="py-2 px-2 border-r border-slate-400 text-right w-20">К-во</th>
+                                <th class="py-2 px-2 border-r border-slate-400 text-right w-24">Ед. цена (€)</th>
+                                <th class="py-2 px-2 text-right w-28">Стойност (€)</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+
+                    <div class="flex justify-end mb-8">
+                        <div class="w-64 text-xs space-y-1.5 border border-slate-400 p-3 bg-slate-50">
+                            <div class="flex justify-between"><span>Общо СМР без ДДС:</span><strong>${formatEUR(sumTotal)}</strong></div>
+                            <div class="flex justify-between"><span>ДДС (20%):</span><span>${formatEUR(vat)}</span></div>
+                            <div class="flex justify-between border-t border-slate-400 pt-1.5 text-sm font-bold"><span>ОБЩО ЗА ПЛАЩАНЕ:</span><span>${formatEUR(grandTotal)}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-8 pt-6 text-xs">
+                        <div>
+                            <p class="font-bold mb-6">ЗА ВЪЗЛОЖИТЕЛЯ (Инвеститорски контрол):</p>
+                            <p>Подпис и печат: ............................................</p>
+                        </div>
+                        <div>
+                            <p class="font-bold mb-6">ЗА ИЗПЪЛНИТЕЛЯ („КОНТРАКТ СИТИ“ ООД):</p>
+                            <p>Подпис и печат: ............................................</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('document-modal').classList.remove('hidden');
+        }
+
+        // --- 7. РЕНДЕРИРАНЕ НА МОДУЛ 4: ЛИНЕЕН ГРАФИК & CASHFLOW ---
+        function renderGantt() {
+            const tbody = document.getElementById('gantt-table-body');
+            const monthlyExpenses = [0, 0, 0, 0, 0, 0, 0, 0];
+
+            tbody.innerHTML = GANTT_STAGES.map(row => {
+                const activeMonthsCount = row.months.filter(m => m === 1).length;
+                const monthlyShare = activeMonthsCount > 0 ? row.budget / activeMonthsCount : 0;
+
+                const cells = row.months.map((active, mIdx) => {
+                    if (active) monthlyExpenses[mIdx] += monthlyShare;
+                    return `
+                        <td class="p-1.5 border-l border-slate-200 text-center">
+                            ${active ? `<div class="${row.color} h-5 rounded-md shadow-xs text-[10px] text-white font-semibold flex items-center justify-center">${formatEUR(monthlyShare).replace(' €', '')}</div>` : ''}
+                        </td>
+                    `;
+                }).join('');
+
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="py-3 px-4 font-semibold text-slate-800">${row.stage}</td>
+                        ${cells}
+                        <td class="py-3 px-4 text-right font-bold text-slate-800 border-l border-slate-200">${formatEUR(row.budget)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Парични потоци
+            const cfBody = document.getElementById('cashflow-table-body');
+            const income = monthlyExpenses.map((exp, idx) => idx === 0 ? 65000 : exp * 1.15); // Аванс + плащания по Акт 19
+            let balance = 0;
+
+            cfBody.innerHTML = `
+                <tr class="font-medium text-emerald-700 bg-emerald-50/30">
+                    <td class="py-3 px-4 font-bold">Очаквани приходи (Аванс + Акт 19)</td>
+                    ${income.map(v => `<td class="py-3 px-2 text-right">${formatEUR(v)}</td>`).join('')}
+                </tr>
+                <tr class="font-medium text-rose-700 bg-rose-50/30">
+                    <td class="py-3 px-4 font-bold">Необходими разходи по график</td>
+                    ${monthlyExpenses.map(v => `<td class="py-3 px-2 text-right">-${formatEUR(v)}</td>`).join('')}
+                </tr>
+                <tr class="font-extrabold text-slate-900 bg-slate-100">
+                    <td class="py-3 px-4">Нетен паричен поток (Салдо с натрупване)</td>
+                    ${monthlyExpenses.map((exp, i) => {
+                        balance += (income[i] - exp);
+                        return `<td class="py-3 px-2 text-right ${balance >= 0 ? 'text-blue-700' : 'text-rose-600'}">${formatEUR(balance)}</td>`;
+                    }).join('')}
+                </tr>
+            `;
+        }
+
+        // --- 8. РЕНДЕРИРАНЕ НА МОДУЛ 5: ПОДИЗПЪЛНИТЕЛИ & ТЪРГОВЕ ---
+        function renderSubcontractors() {
+            const grid = document.getElementById('subcontractors-grid');
+            grid.innerHTML = SUBCONTRACTORS_DATA.map(sub => `
+                <div class="bg-white rounded-xl border ${sub.recommended ? 'border-2 border-emerald-500 shadow-md' : 'border-slate-200 shadow-sm'} p-5 flex flex-col justify-between relative">
+                    ${sub.recommended ? '<span class="absolute -top-3 right-4 bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">Най-изгодна оферта</span>' : ''}
+                    <div>
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-base">${sub.company}</h3>
+                                <p class="text-xs text-slate-400">ЕИК: ${sub.eik} • Упр: ${sub.manager}</p>
+                            </div>
+                            <div class="flex items-center gap-1 bg-amber-50 text-amber-700 px-2 py-1 rounded-lg text-xs font-bold">
+                                <i class="fa-solid fa-star text-amber-400"></i> ${sub.rating}
+                            </div>
+                        </div>
+
+                        <div class="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-2 text-xs">
+                            <div class="flex justify-between">
+                                <span class="text-slate-500">Зидария Wienerberger 25 см:</span>
+                                <span class="font-bold text-slate-800">${sub.unitPriceMasonry.toFixed(2)} €/м³</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-500">Машинна гипсова мазилка:</span>
+                                <span class="font-bold text-slate-800">${sub.unitPricePlaster.toFixed(2)} €/м²</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-500">Срок за изпълнение:</span>
+                                <span class="font-bold text-blue-600">${sub.days} календарни дни</span>
+                            </div>
+                            <div class="flex justify-between border-t border-slate-200 pt-2 text-sm">
+                                <span class="font-semibold text-slate-700">Обща оферта:</span>
+                                <span class="font-extrabold text-slate-900">${formatEUR(sub.totalOffer)}</span>
+                            </div>
+                        </div>
+
+                        <p class="mt-3 text-xs text-slate-600 italic">"${sub.note}"</p>
+                    </div>
+
+                    <button onclick="generateSubcontractorContract('${sub.id}')" class="mt-5 w-full py-2.5 px-4 rounded-lg ${sub.recommended ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-slate-800 hover:bg-slate-900 text-white'} text-xs font-semibold flex items-center justify-center gap-2 transition-colors">
+                        <i class="fa-solid fa-file-contract"></i>
+                        <span>Генерирай Договор с подизпълнител</span>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function generateSubcontractorContract(subId) {
+            const sub = SUBCONTRACTORS_DATA.find(s => s.id === subId);
+            if (!sub) return;
+
+            document.getElementById('doc-modal-title').textContent = `Договор за строителство (Подизпълнител) - ${sub.company}`;
+            document.getElementById('print-area').innerHTML = `
+                <div class="p-4 space-y-4 text-xs sm:text-sm leading-relaxed">
+                    <h2 class="text-center font-bold text-lg uppercase">ДОГОВОР ЗА ИЗВЪРШВАНЕ НА СТРОИТЕЛНО-МОНТАЖНИ РАБОТИ</h2>
+                    <p class="text-center text-xs text-slate-500">Сключен днес, ${new Date().toLocaleDateString('bg-BG')} г., в гр. София, на основание чл. 258-269 от ЗЗД</p>
+                    
+                    <p><strong>1. ВЪЗЛОЖИТЕЛ:</strong> „КОНТРАКТ СИТИ“ ООД, със седалище и адрес на управление гр. София, представлявано от Управителя, от една страна, и</p>
+                    <p><strong>2. ПОДИЗПЪЛНИТЕЛ:</strong> <strong>„${sub.company}“</strong>, ЕИК ${sub.eik}, представлявано от ${sub.manager}, от друга страна, се сключи настоящият договор за следното:</p>
+
+                    <h3 class="font-bold uppercase pt-2">I. ПРЕДМЕТ И ЦЕНА НА ДОГОВОРА</h3>
+                    <p>Чл. 1. ВЪЗЛОЖИТЕЛЯТ възлага, а ПОДИЗПЪЛНИТЕЛЯТ приема да изпълни със свои сили, инструменти и квалифицирана работна ръка етап <strong>„Груба зидария и вътрешни мазилки“</strong> на обект: <strong>Жилищна сграда „Хоризонт“ - гр. София</strong>.</p>
+                    <p>Чл. 2. Общата стойност на възложените СМР съгласно одобрената оферта възлиза на <strong>${formatEUR(sub.totalOffer)}</strong> (без ДДС), при твърди единични цени: зидария – <strong>${sub.unitPriceMasonry.toFixed(2)} €/м³</strong> и мазилка – <strong>${sub.unitPricePlaster.toFixed(2)} €/м²</strong>.</p>
+
+                    <h3 class="font-bold uppercase pt-2">II. СРОКОВЕ, ГАРАНЦИЯ И НЕУСТОЙКИ</h3>
+                    <p>Чл. 3. Срокът за пълно и качествено завършване на възложените СМР е <strong>${sub.days} (четиридесет и два) календарни дни</strong> от датата на подписване на Протокол за откриване на строителната площадка.</p>
+                    <p>Чл. 4. ВЪЗЛОЖИТЕЛЯТ удържа <strong>5% гаранция за добро изпълнение</strong> от всеки месечен Акт 19, която се освобождава след подписване на Акт Образец 15 без забележки.</p>
+                    <p>Чл. 5. При забава на ПОДИЗПЪЛНИТЕЛЯ същият дължи неустойка в размер на <strong>0.5% на ден</strong> върху стойността на неизпълнените СМР, но не повече от 10% от общата цена по договора.</p>
+
+                    <div class="grid grid-cols-2 gap-8 pt-10 text-xs">
+                        <div>
+                            <p class="font-bold mb-8">ЗА ВЪЗЛОЖИТЕЛЯ („КОНТРАКТ СИТИ“ ООД):</p>
+                            <p>............................................................</p>
+                        </div>
+                        <div>
+                            <p class="font-bold mb-8">ЗА ПОДИЗПЪЛНИТЕЛЯ („${sub.company}“):</p>
+                            <p>............................................................</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('document-modal').classList.remove('hidden');
+        }
+
+        function closeDocumentModal() {
+            document.getElementById('document-modal').classList.add('hidden');
+        }
+
+        function copyDocumentText() {
+            const text = document.getElementById('print-area').innerText;
+            copyTextToClipboard(text, 'Текстът на документа е копиран в клипборда!');
+        }
+
+        function copyTextToClipboard(text, successMsg) {
+            try {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.setAttribute('readonly', '');
+                textarea.style.position = 'absolute';
+                textarea.style.left = '-9999px';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast(successMsg);
+            } catch (err) {
+                showToast('Неуспешно копиране. Копирайте ръчно полето.', 'error');
+            }
+        }
+
+        function copyPaymentField(elementId, label) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            copyTextToClipboard(el.innerText.trim(), `${label} е копиран(а) за банков превод!`);
+        }
+
+        function buildPaymentReferenceText() {
+            const extraInput = document.getElementById('payer-ref-input');
+            const extra = extraInput ? extraInput.value.trim() : '';
+            return extra
+                ? `Абонамент BuildCost Pro - ${selectedPaymentPlan.name} (${extra})`
+                : `Абонамент BuildCost Pro - ${selectedPaymentPlan.name}`;
+        }
+
+        function updatePaymentReference() {
+            const refEl = document.getElementById('pay-reference');
+            if (refEl) {
+                refEl.textContent = buildPaymentReferenceText();
+            }
+        }
+
+        function openPaymentInstructionsModal() {
+            const reference = buildPaymentReferenceText();
+            const dateStr = new Date().toLocaleDateString('bg-BG');
+
+            closeLicenseModal();
+            document.getElementById('doc-modal-title').textContent = `Указания за дистанционен банков превод - ${selectedPaymentPlan.name}`;
+            document.getElementById('print-area').innerHTML = `
+                <div class="border-2 border-slate-800 p-6 sm:p-8 space-y-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start border-b-2 border-slate-800 pb-4 gap-2">
+                        <div>
+                            <div class="text-xs uppercase font-bold text-slate-500 tracking-wider">BuildCost Pro | ПТО Мастър SaaS</div>
+                            <h2 class="text-xl font-extrabold text-slate-900 uppercase mt-0.5">УКАЗАНИЯ ЗА ДИСТАНЦИОНЕН БАНКОВ ПРЕВОД</h2>
+                            <p class="text-xs text-slate-600 mt-1">Директен превод в Евро (€) към физическо лице без посещение на място</p>
+                        </div>
+                        <div class="text-left sm:text-right text-xs">
+                            <div><strong>Дата:</strong> ${dateStr} г.</div>
+                            <div><strong>Валута:</strong> ЕВРО (EUR / €)</div>
+                            <div><strong>Метод:</strong> 100% Дистанционно</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 border border-slate-300 rounded-lg p-4 space-y-2.5 text-xs sm:text-sm">
+                        <div class="font-bold text-slate-800 uppercase text-xs border-b border-slate-200 pb-1.5">Данни за получателя на превода</div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-1">
+                            <span class="text-slate-500 font-medium">Получател (Физическо лице):</span>
+                            <span class="sm:col-span-2 font-bold text-slate-900">Цветелина Здравкова Стоянова</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-1">
+                            <span class="text-slate-500 font-medium">IBAN сметка:</span>
+                            <span class="sm:col-span-2 font-mono font-bold text-slate-900">BG03ESPY40040038432460</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-1">
+                            <span class="text-slate-500 font-medium">BIC код:</span>
+                            <span class="sm:col-span-2 font-mono font-bold text-slate-900">ESPYBGS1</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-1">
+                            <span class="text-slate-500 font-medium">Избран абонаментен план:</span>
+                            <span class="sm:col-span-2 font-bold text-slate-900">${selectedPaymentPlan.name}</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-1">
+                            <span class="text-slate-500 font-medium">Сума за превод:</span>
+                            <span class="sm:col-span-2 font-extrabold text-base text-slate-900">${formatEUR(selectedPaymentPlan.amount)}</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-1">
+                            <span class="text-slate-500 font-medium">Основание за превод:</span>
+                            <span class="sm:col-span-2 font-semibold text-slate-900">${reference}</span>
+                        </div>
+                    </div>
+
+                    <div class="text-xs text-slate-700 space-y-1.5">
+                        <div class="font-bold text-slate-800">Инструкции за дистанционна активация:</div>
+                        <p>1. Наредете превода на сумата <strong>${formatEUR(selectedPaymentPlan.amount)}</strong> по посочената IBAN сметка <strong>BG03ESPY40040038432460</strong> (BIC: <strong>ESPYBGS1</strong>) на името на <strong>Цветелина Здравкова Стоянова</strong>.</p>
+                        <p>2. Впишете точното основание за превод: <em>„${reference}“</em>.</p>
+                        <p>3. След потвърждение на плащането ще получите дистанционно своя активационен лицензионен ключ за пълно отключване на системата.</p>
+                    </div>
+                </div>
+            `;
+            document.getElementById('document-modal').classList.remove('hidden');
+        }
+
+        // --- 9. СИСТЕМА ЗА B2B ЛИЦЕНЗИРАНЕ ---
+        function updateLicenseUI() {
+            const badge = document.getElementById('license-badge');
+            const statusText = document.getElementById('license-status-text');
+            if (licenseInfo.active) {
+                badge.className = "hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200";
+                badge.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i><span>${licenseInfo.plan}</span>`;
+            } else {
+                badge.className = "hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200";
+                statusText.textContent = licenseInfo.plan;
+            }
+        }
+
+        function openLicenseModal() {
+            document.getElementById('payment-selected-plan').textContent = selectedPaymentPlan.name;
+            document.getElementById('payment-selected-amount').textContent = formatEUR(selectedPaymentPlan.amount);
+            updatePaymentReference();
+            document.getElementById('license-modal').classList.remove('hidden');
+        }
+
+        function closeLicenseModal() {
+            document.getElementById('license-modal').classList.add('hidden');
+        }
+
+        function selectPlan(planName, amountEur) {
+            selectedPaymentPlan = { name: planName, amount: amountEur };
+            document.getElementById('payment-selected-plan').textContent = planName;
+            document.getElementById('payment-selected-amount').textContent = formatEUR(amountEur);
+            updatePaymentReference();
+            const box = document.getElementById('remote-payment-box');
+            if (box) {
+                box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            showToast(`Избран план „${planName}“ (${formatEUR(amountEur)}) — данните за превод към Цветелина Здравкова Стоянова са готови!`, 'info');
+        }
+
+        function activateLicenseKey() {
+            const key = document.getElementById('license-key-input').value.trim().toUpperCase();
+            if (key === 'CONTRACT2026' || key === 'PTOPRO2026') {
+                licenseInfo = {
+                    active: true,
+                    plan: "Активен Лиценз: КОРПОРАТИВЕН (690 €/мес.)"
+                };
+                saveState();
+                updateLicenseUI();
+                closeLicenseModal();
+                showToast('Поздравления! Корпоративният лиценз за КОНТРАКТ СИТИ ООД е активиран!');
+            } else {
+                showToast('Невалиден лицензионен ключ! Опитайте с CONTRACT2026', 'error');
+            }
+        }
+
+        // --- 10. ИНИЦИАЛИЗАЦИЯ НА ПРИЛОЖЕНИЕТО ---
+        function renderAll() {
+            renderDashboard();
+            renderKSS();
+            renderAkt19();
+            renderGantt();
+            renderSubcontractors();
+            updateLicenseUI();
+        }
+
+        window.onload = function() {
+            renderAll();
+        };
+    </script>
+</body>
+</html>
